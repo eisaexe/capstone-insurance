@@ -1,0 +1,13 @@
+Team2_Capstone/
+│
+├── .env                       # (Private) Store OPENAI_API_KEY="sk-..." here
+├── requirements.txt           # List of libraries to install
+├── app.py                     # (Main) Streamlit UI - ONLY ONE PERSON touches this primarily
+│
+└── agents/                    # (Folder) Where the team writes logic
+    ├── __init__.py            # (Empty File) Needed to make this a Python package
+    ├── utils.py               # Shared tools (formatting, charts)
+    ├── data_pipeline.py       # MEMBER 1 (Data): Ingestion & Classification logic
+    ├── fraud_agent.py         # MEMBER 2 (Biz Logic): Fraud detection logic
+    ├── policy_agent.py        # MEMBER 3 (Biz Logic): Policy checking logic
+    └── customer_agent.py      # MEMBER 4 (Customer): Chatbot & Tone logic
