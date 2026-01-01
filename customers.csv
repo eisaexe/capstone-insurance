@@ -1,0 +1,6 @@
+Customer_ID,Name,Policy_ID,Policy_Type,Total_Claims,Claim_History_Amount,Policy_Limit,Status,Next_Renewal
+CUST-1001,Rahul Sharma,POL-A101,Comprehensive,2,45000,500000,Active,2026-05-20
+CUST-1002,Priya Verma,POL-B202,Third-Party,0,0,200000,Active,2026-08-15
+CUST-1003,Amit Patel,POL-C303,Comprehensive,5,850000,1000000,Flagged,2026-01-10
+CUST-1004,Sneha Reddy,POL-D404,Zero-Depreciation,1,12000,300000,Active,2026-11-01
+CUST-1005,Vikram Singh,POL-E505,Comprehensive,3,150000,500000,Expired,2025-12-01
