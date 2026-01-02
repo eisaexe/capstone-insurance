@@ -21,7 +21,7 @@ HEADERS = {
 # Load Customer CSV
 # ------------------------------------------
 try:
-    CUSTOMER_DB = pd.read_csv("customers.csv")
+    CUSTOMER_DB = pd.read_csv("customers_copy.csv")
     CUSTOMER_DB["Customer_ID"] = CUSTOMER_DB["Customer_ID"].astype(str).str.upper()
 except Exception:
     CUSTOMER_DB = pd.DataFrame()
@@ -118,22 +118,54 @@ def get_customer_response(user_query, session_context):
     # AUTHENTICATION
     # --------------------------------------
     if not user_id:
-        match = re.search(r"(CUST-\d{4})", user_query, re.IGNORECASE)
+        # Use a module-level pending ID so the flow works across separate calls
+        global PENDING_AUTH_ID
+        if 'PENDING_AUTH_ID' not in globals():
+            PENDING_AUTH_ID = None
 
-        if not match:
-            return "🔒 Please enter your **Customer ID** (e.g., CUST-1001)."
+        # If we are awaiting a PIN for a pending Customer ID in session
+        pending_id = session_context.get("pending_id") or PENDING_AUTH_ID
+        if pending_id:
+            entered_pin = user_query.strip()
+            customer = lookup_customer(pending_id)
+            if not customer:
+                # unexpected session state
+                PENDING_AUTH_ID = None
+                return "⚠️ Session error. Please start again."
 
-        found_id = match.group(1).upper()
+            # Robust PIN comparison: allow leading zeros in input
+            stored_pin = customer.get("Customer_PIN")
+            pin_ok = False
+            try:
+                if int(str(stored_pin)) == int(entered_pin):
+                    pin_ok = True
+            except Exception:
+                if str(stored_pin) == entered_pin:
+                    pin_ok = True
+
+            if pin_ok:
+                # Clear pending state and return exact login message
+                PENDING_AUTH_ID = None
+                return {
+                    "action": "LOGIN",
+                    "user_id": pending_id,
+                    "text": f"✅ Customer logged in successfully.\n👋 Hi {customer['Name']}! How can I help you today?"
+                }
+            else:
+                # Clear pending and stop processing on failure
+                PENDING_AUTH_ID = None
+                return "❌ Invalid PIN. Authentication failed."
+
+        # Treat the input as a Customer ID (first step)
+        found_id = user_query.strip().upper()
         customer = lookup_customer(found_id)
 
         if not customer:
-            return f"❌ Customer ID `{found_id}` not found."
+            return f"❌ Customer ID `{found_id}` not found"
 
-        return {
-            "action": "LOGIN",
-            "user_id": found_id,
-            "text": f"👋 Hi {customer['Name']}! How can I help you today?"
-        }
+        # Set module-level pending id and prompt for PIN (exact message)
+        PENDING_AUTH_ID = found_id
+        return "🔐 Please enter your Customer PIN to continue."
 
     # --------------------------------------
     # POST LOGIN
