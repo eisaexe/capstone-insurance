@@ -1,0 +1,35 @@
+Metadata-Version: 2.1
+Name: perplexity-client
+Version: 0.1.1
+Summary: Unofficial Perplexity.ai API Client
+License: MIT
+Author: Daniel Klic
+Author-email: daniel.klic96@gmail.com
+Requires-Python: >=3.10,<4.0
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Dist: requests (>=2.31.0,<3.0.0)
+Description-Content-Type: text/markdown
+
+# Unofficial Perplexity API Client
+
+This is an UNOFFICIAL Perplexity API Client for interaction with Perplexity AI API.
+
+## Usage 
+
+```python
+from peplexity_client.client import PerplexityClient, PerplexityModels
+
+
+client = PerplexityClient(api_key="YOUR-API-KEY")
+messages = [
+  {"role": "user", "text": "Give me 20 most visited places on Earth"}
+]
+
+# Here we can use online model or leave it with the default mistral-7b-instruct model
+places = client.chat_completion(messages=messages, model=PerplexityModels.PPLX_70B_ONLINE)
+```
+
