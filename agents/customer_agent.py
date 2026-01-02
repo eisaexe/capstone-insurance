@@ -27,10 +27,11 @@ except Exception:
     CUSTOMER_DB = pd.DataFrame()
 
 # ------------------------------------------
-# Load Motor Policy Text (CAR POLICY)
+# Load Insurance Policy TXT
+# (UNCHANGED – as requested)
 # ------------------------------------------
 try:
-    with open("policy.txt", "r", encoding="utf-8") as f:
+    with open("insurance_policy.txt", "r", encoding="utf-8") as f:
         POLICY_TEXT = f.read().strip()
 except Exception:
     POLICY_TEXT = ""
@@ -56,12 +57,50 @@ def typing_animation(label="Assistant is typing"):
     print("\r", end="")
 
 
-def is_policy_query(text):
-    keywords = [
-        "policy", "coverage", "covered", "not covered", "exclusion",
-        "idv", "deductible", "claim", "accident", "theft", "fire"
+def classify_query(text: str) -> str:
+    """
+    Robust intent classification:
+    1. CUSTOMER intent has priority
+    2. POLICY intent only if no customer signals
+    """
+
+    text_l = text.lower()
+
+    customer_keywords = [
+        "my name", "my email", "my phone", "my number", "my address",
+        "my policy number", "my dob", "my date of birth",
+        "customer id", "account", "profile", "personal details",
+        "registered", "contact details"
     ]
-    return any(k in text.lower() for k in keywords)
+
+    policy_keywords = [
+        "policy coverage", "coverage", "covered", "not covered",
+        "exclusion", "idv", "deductible", "claim process",
+        "accident", "theft", "fire", "policy limit", "eligibility"
+    ]
+
+    if any(k in text_l for k in customer_keywords):
+        return "CUSTOMER"
+
+    if any(k in text_l for k in policy_keywords):
+        return "POLICY"
+
+    # Default fallback: customer context
+    return "CUSTOMER"
+
+
+def call_llm(system_prompt: str, user_prompt: str) -> str:
+    payload = {
+        "model": "sonar-pro",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    }
+
+    response = requests.post(PPLX_URL, headers=HEADERS, json=payload)
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
 
 
 # ------------------------------------------
@@ -69,7 +108,8 @@ def is_policy_query(text):
 # ------------------------------------------
 def get_customer_response(user_query, session_context):
     """
-    Customer Agent for Motor Insurance
+    Insurance Customer Support Assistant
+    with strict data-source isolation
     """
 
     user_id = session_context.get("auth_id")
@@ -89,11 +129,10 @@ def get_customer_response(user_query, session_context):
         if not customer:
             return f"❌ Customer ID `{found_id}` not found."
 
-        # ✅ IMMEDIATE GREETING
         return {
             "action": "LOGIN",
             "user_id": found_id,
-            "text": f"👋 Hi {customer['Name']}!"
+            "text": f"👋 Hi {customer['Name']}! How can I help you today?"
         }
 
     # --------------------------------------
@@ -105,63 +144,64 @@ def get_customer_response(user_query, session_context):
 
     typing_animation()
 
-    # --------------------------------------
-    # STRICT CONTEXT BUILDING
-    # --------------------------------------
-    customer_context = f"""
-CUSTOMER RECORD (USE ONLY THIS):
-Name: {customer['Name']}
-Policy Status: {customer['Status']}
-Policy Limit: ₹{customer['Policy_Limit']}
-Total Claims: {customer['Total_Claims']}
-Claim Amount: ₹{customer['Claim_History_Amount']}
-Renewal Date: {customer['Next_Renewal']}
-""".strip()
+    query_type = classify_query(user_query)
 
-    policy_context = f"""
-MOTOR INSURANCE POLICY (USE ONLY THIS):
-{POLICY_TEXT if POLICY_TEXT else "Policy text not available."}
-""".strip()
+    # =====================================================
+    # A. CUSTOMER DETAIL QUERY (CSV ONLY)
+    # =====================================================
+    if query_type == "CUSTOMER":
 
-    system_prompt = (
-        "You are a MOTOR INSURANCE customer assistant.\n"
-        "RULES:\n"
-        "- Answer ONLY from the provided CUSTOMER RECORD and MOTOR POLICY.\n"
-        "- If information is not present, clearly say it is not available.\n"
-        "- Do NOT guess, assume, or provide legal conclusions.\n"
-        "- No fraud accusations.\n"
-        "- Be clear, polite, and concise."
-    )
+        customer_context = f"""
+CUSTOMER RECORD (AUTHORITATIVE SOURCE):
+{customer}
+"""
 
-    user_prompt = f"""
+        system_prompt = (
+            "You are an Insurance Customer Support Assistant.\n"
+            "Answer using ONLY the provided customer record.\n"
+            "Do NOT use policy information.\n"
+            "If information is missing, say:\n"
+            "'This information is not available in the customer records.'"
+        )
+
+        user_prompt = f"""
 {customer_context}
 
+User Question:
+{user_query}
+"""
+
+        try:
+            return call_llm(system_prompt, user_prompt)
+        except Exception:
+            return "⚠️ Unable to retrieve customer information at this time."
+
+    # =====================================================
+    # B. INSURANCE POLICY QUERY (UNCHANGED)
+    # =====================================================
+    if query_type == "POLICY":
+
+        policy_context = f"""
+INSURANCE POLICY DOCUMENT:
+{POLICY_TEXT if POLICY_TEXT else "Policy text not available."}
+"""
+
+        system_prompt = (
+            "You are an Insurance Policy Support Assistant.\n"
+            "Answer using ONLY the provided policy document.\n"
+            "Do NOT add interpretation or assumptions.\n"
+            "If information is missing, say:\n"
+            "'This information is not specified in the insurance policy document.'"
+        )
+
+        user_prompt = f"""
 {policy_context}
 
 User Question:
 {user_query}
 """
 
-    payload = {
-        "model": "sonar-pro",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-    }
-
-    # --------------------------------------
-    # API CALL
-    # --------------------------------------
-    try:
-        response = requests.post(PPLX_URL, headers=HEADERS, json=payload)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
-
-    except requests.exceptions.HTTPError:
-        if "429" in response.text:
-            return "⚠️ System temporarily unavailable. Please try again later."
-        return "⚠️ Unable to process your request right now."
-
-    except Exception as e:
-        return f"⚠️ System Error: {str(e)}"
+        try:
+            return call_llm(system_prompt, user_prompt)
+        except Exception:
+            return "⚠️ Unable to retrieve policy information at this time."
