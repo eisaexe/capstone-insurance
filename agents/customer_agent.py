@@ -1,11 +1,11 @@
 # FILE: agents/customer_agent.py
-import google.generativeai as genai
+from openai import OpenAI
 import pandas as pd
 import re
 
 # ==========================================
-# 👇 PASTE YOUR GEMINI API KEY INSIDE QUOTES
-KEY = "AIzaSyCTBigtnx1U8uXd2RGcLfhUkz87oLhnsBI"
+# 👇 PASTE YOUR OPENAI API KEY INSIDE QUOTES
+OPENAI_KEY = "sk-aQpnfpf9xb4_QVPHSYGc1wSjwABJs-NgFMmUZsTGQ2T3BlbkFJ8Z7K4NnjeAnYQx7rtQNe861Hjp0Uai5ovXQfko5lYA"
 # ==========================================
 
 # Load the CSV Data
@@ -25,14 +25,13 @@ def lookup_customer(cust_id):
 
 def get_customer_response(user_query, session_context):
     """
-    Handles Login + Chat Response
+    Handles Login + Chat Response using OpenAI
     """
-    if "PASTE_YOUR" in KEY:
-        return "⚠️ Error: Please paste your API Key in agents/customer_agent.py"
+    if "sk-proj" in OPENAI_KEY or "xxxx" in OPENAI_KEY:
+        return "⚠️ Error: Please paste your OpenAI API Key in agents/customer_agent.py"
 
     try:
-        genai.configure(api_key=KEY)
-        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        client = OpenAI(api_key=OPENAI_KEY)
         
         # 1. CHECK IF USER IS LOGGED IN
         user_id = session_context.get('auth_id')
@@ -57,14 +56,14 @@ def get_customer_response(user_query, session_context):
                 else:
                     return f"❌ I found ID '{found_id}', but it's not in our database. Please check customers.csv."
             else:
-                # 👇 THIS IS THE REPEATED PROMPT IF THEY FAIL TO PROVIDE ID
+                # REPEATED PROMPT IF THEY FAIL TO PROVIDE ID
                 return "🔒 **Authentication Required**\nPlease provide your **Customer ID** (e.g., 'CUST-1001') to continue."
 
         # 3. IF LOGGED IN -> ANSWER QUESTION USING DATA
         if user_id:
             customer_data = lookup_customer(user_id)
         
-        # Create Data Context for Gemini
+        # Create Data Context for OpenAI
         context = f"""
         USER PROFILE:
         - Name: {customer_data['Name']}
@@ -75,17 +74,22 @@ def get_customer_response(user_query, session_context):
         """
 
         prompt = f"""
-        Act as a friendly insurance agent.
-        {context}
+        Act as a friendly, empathetic insurance assistant.
+        User Data: {context}
         User Query: "{user_query}"
         
         Instructions:
-        - Answer concisely based ONLY on the profile data.
-        - If they ask about claims, mention the exact number and amount.
+        - Answer based ONLY on the User Data provided.
+        - Be concise and polite.
         """
         
-        response = model.generate_content(prompt)
-        return response.text
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo", # Fast model for chat
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content
 
     except Exception as e:
         return f"System Error: {str(e)}"
