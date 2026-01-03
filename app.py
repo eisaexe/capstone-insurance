@@ -238,79 +238,79 @@ else:
 
     # ... (Keep existing file uploader logic for claim types) ...
     # ---- ADD THIS ONCE (above the if/elif) ----
-fir_file = None
-fir_text = ""
+    fir_file = None
+    fir_text = ""
 
-# ---- YOUR EXISTING LOGIC ----
-if claim_type == "Accidental Fire":
-    st.file_uploader("Upload Fire Damage Image", type=["jpg", "jpeg", "png"])
+    # ---- YOUR EXISTING LOGIC ----
+    if claim_type == "Accidental Fire":
+        st.file_uploader("Upload Fire Damage Image", type=["jpg", "jpeg", "png"])
 
-elif claim_type == "Theft":
-    fir_file = st.file_uploader("Upload FIR as .txt file (optional)", type=["txt"])
-    fir_text = st.text_area(
-        "Enter FIR Details",
-        placeholder="Paste FIR content here (theft date, FIR number, police station, vehicle details...)",
-        height=140
-    )
-    if fir_file:
-        fir_text = fir_file.read().decode("utf-8")
-        st.info("📄 FIR text loaded from file. You can edit it.")
-
-elif claim_type == "Riot":
-    st.file_uploader("Upload Riot Damage Image", type=["jpg", "jpeg", "png"])
-    fir_file = st.file_uploader("Upload FIR as .txt file (optional)", type=["txt"])
-    fir_text = st.text_area(
-        "Enter FIR Details",
-        placeholder="Paste FIR content here (date, location, riot details, FIR number...)",
-        height=140
-    )
-    if fir_file:
-        fir_text = fir_file.read().decode("utf-8")
-        st.info("📄 FIR text loaded from file. You can edit it.")
-
-elif claim_type == "Accident":
-    st.file_uploader(
-        "Upload Accident Image",
-        type=["jpg", "jpeg", "png"]
-    )
-    fir_file = st.file_uploader(
-        "Upload FIR as .txt file (optional)",
-        type=["txt"]
-    )
-    fir_text = st.text_area(
-        "Enter FIR Details",
-        placeholder="Paste FIR content here (date, time, accident location, FIR number, police station...)",
-        height=140
-    )
-
-    if fir_file is not None:
-        try:
+    elif claim_type == "Theft":
+        fir_file = st.file_uploader("Upload FIR as .txt file (optional)", type=["txt"])
+        fir_text = st.text_area(
+            "Enter FIR Details",
+            placeholder="Paste FIR content here (theft date, FIR number, police station, vehicle details...)",
+            height=140
+        )
+        if fir_file:
             fir_text = fir_file.read().decode("utf-8")
             st.info("📄 FIR text loaded from file. You can edit it.")
-        except Exception:
-            st.error("Unable to read FIR text file")
 
-elif claim_type == "Vehicle in Transit Accident":
-    st.file_uploader(
-        "Upload Transit Damage Image",
-        type=["jpg", "jpeg", "png"]
-    )
-    fir_file = st.file_uploader(
-        "Upload FIR as .txt file (optional)",
-        type=["txt"]
-    )
-    fir_text = st.text_area(
-        "Enter FIR Details",
-        placeholder="Paste FIR content here (transit details, date, FIR number, police station, incident summary...)",
-        height=140
-    )
-
-    if fir_file is not None:
-        try:
+    elif claim_type == "Riot":
+        st.file_uploader("Upload Riot Damage Image", type=["jpg", "jpeg", "png"])
+        fir_file = st.file_uploader("Upload FIR as .txt file (optional)", type=["txt"])
+        fir_text = st.text_area(
+            "Enter FIR Details",
+            placeholder="Paste FIR content here (date, location, riot details, FIR number...)",
+            height=140
+        )
+        if fir_file:
             fir_text = fir_file.read().decode("utf-8")
             st.info("📄 FIR text loaded from file. You can edit it.")
-        except Exception:
-            st.error("Unable to read FIR text file")
+
+    elif claim_type == "Accident":
+        st.file_uploader(
+            "Upload Accident Image",
+            type=["jpg", "jpeg", "png"]
+        )
+        fir_file = st.file_uploader(
+            "Upload FIR as .txt file (optional)",
+            type=["txt"]
+        )
+        fir_text = st.text_area(
+            "Enter FIR Details",
+            placeholder="Paste FIR content here (date, time, accident location, FIR number, police station...)",
+            height=140
+        )
+
+        if fir_file is not None:
+            try:
+                fir_text = fir_file.read().decode("utf-8")
+                st.info("📄 FIR text loaded from file. You can edit it.")
+            except Exception:
+                st.error("Unable to read FIR text file")
+
+    elif claim_type == "Vehicle in Transit Accident":
+        st.file_uploader(
+            "Upload Transit Damage Image",
+            type=["jpg", "jpeg", "png"]
+        )
+        fir_file = st.file_uploader(
+            "Upload FIR as .txt file (optional)",
+            type=["txt"]
+        )
+        fir_text = st.text_area(
+            "Enter FIR Details",
+            placeholder="Paste FIR content here (transit details, date, FIR number, police station, incident summary...)",
+            height=140
+        )
+
+        if fir_file is not None:
+            try:
+                fir_text = fir_file.read().decode("utf-8")
+                st.info("📄 FIR text loaded from file. You can edit it.")
+            except Exception:
+                st.error("Unable to read FIR text file")
   
     st.markdown('</div>', unsafe_allow_html=True)
 
