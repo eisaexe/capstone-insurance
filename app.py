@@ -1,10 +1,13 @@
 import streamlit as st
 import plotly.graph_objects as go
-from agents.fraud_agent import check_fraud_risk
+import pandas as pd
+from agents.fraud_agent import check_fraud_with_gemini
 from agents.customer_agent import get_customer_response
 
+# --- PAGE CONFIG ---
 st.set_page_config(page_title="Team 2 AI", layout="wide", page_icon="🛡️")
 
+# --- STYLING ---
 st.markdown("""
 <style>
 .stApp {
@@ -21,39 +24,88 @@ st.markdown("""
 }
 h1, h2, h3, p, label { color: white !important; }
 .stTextInput input, .stTextArea textarea {
-    color: white;
-    background-color: rgba(255,255,255,0.1);
+    color: white !important;
+    background-color: rgba(255,255,255,0.1) !important;
 }
 .metric-val { font-size: 2rem; font-weight: bold; }
 .metric-lbl { font-size: 0.9rem; color: #ccc; }
 </style>
 """, unsafe_allow_html=True)
 
+# --- SESSION STATE INITIALIZATION ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_type" not in st.session_state:
+    st.session_state.user_type = None
 if "auth_id" not in st.session_state:
     st.session_state.auth_id = None
-
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [{
-        "role": "assistant",
-        "content": "🔒 Authentication Required. Please enter your Customer ID."
-    }]
-
+    st.session_state.chat_history = [{"role": "assistant", "content": "Welcome! How can I help you today?"}]
 if "analysis_result" not in st.session_state:
     st.session_state.analysis_result = None
 
+# --- AUTHENTICATION LOGIC ---
+def authenticate(u_type, uid, pin):
+    try:
+        if u_type == "Officer":
+            df = pd.read_csv("employee.csv")
+            # Ensure column names match: Employee_id, secret_pin
+            user = df[(df['Employee_id'].astype(str) == uid) & (df['secret_pin'].astype(str) == pin)]
+        else:
+            df = pd.read_csv("customers_copy.csv")
+            # Ensure column names match: Customer_ID, Customer_PIN
+            user = df[(df['Customer_ID'].astype(str) == uid) & (df['Customer_PIN'].astype(str) == pin)]
+        
+        return not user.empty
+    except Exception as e:
+        st.error(f"Error reading data: {e}")
+        return False
+
+# --- LOGIN PAGE ---
+if not st.session_state.authenticated:
+    st.markdown("<h1 style='text-align:center;'>🛡️ IntelliClaim Login</h1>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        login_type = st.radio("Select Login Type", ["Officer", "Customer"])
+        
+        if login_type == "Officer":
+            user_id = st.text_input("Employee ID")
+            password = st.text_input("Secret PIN", type="password")
+        else:
+            user_id = st.text_input("Customer ID")
+            password = st.text_input("Customer PIN", type="password")
+            
+        if st.button("Login", use_container_width=True):
+            if authenticate(login_type, user_id, password):
+                st.session_state.authenticated = True
+                st.session_state.user_type = login_type
+                st.session_state.auth_id = user_id
+                st.rerun()
+            else:
+                st.error("Invalid Credentials. Please try again.")
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.stop() # Prevent showing the dashboard until logged in
+
+# --- APP NAVIGATION (POST-LOGIN) ---
 with st.sidebar:
     st.header("IntelliClaim AI")
-    page = st.radio("Navigate", ["Officer Dashboard", "Customer Chat"])
-    if st.session_state.auth_id:
-        st.success(f"Logged in: {st.session_state.auth_id}")
-        if st.button("Logout"):
-            st.session_state.auth_id = None
-            st.session_state.chat_history = [{
-                "role": "assistant",
-                "content": "🔒 Authentication Required. Please enter your Customer ID."
-            }]
-            st.rerun()
+    
+    # Conditional Navigation based on User Type
+    if st.session_state.user_type == "Officer":
+        page = st.radio("Navigate", ["Officer Dashboard"])
+    else:
+        page = st.radio("Navigate", ["Customer Chat"])
 
+    st.success(f"Logged in as {st.session_state.user_type}: {st.session_state.auth_id}")
+    
+    if st.button("Logout"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+
+# --- CUSTOMER CHAT PAGE ---
 if page == "Customer Chat":
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
@@ -65,15 +117,17 @@ if page == "Customer Chat":
             st.write(prompt)
 
         response = get_customer_response(prompt, {"auth_id": st.session_state.auth_id})
+        
+        # Existing Logic for session handling via response
         if isinstance(response, dict) and response.get("action") == "LOGIN":
             st.session_state.auth_id = response["user_id"]
             response = response["text"]
-            st.rerun()
 
         st.session_state.chat_history.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.write(response)
 
+# --- OFFICER DASHBOARD PAGE ---
 else:
     st.markdown("<h2 style='text-align:center;'>👮 Claims Intelligence Dashboard</h2>", unsafe_allow_html=True)
 
@@ -136,21 +190,18 @@ else:
         ["Accidental Fire", "Theft", "Riot", "Accident", "Vehicle in Transit Accident"]
     )
 
+    # ... (Keep existing file uploader logic for claim types) ...
     if claim_type == "Accidental Fire":
         st.file_uploader("Upload Fire Damage Image", type=["jpg", "jpeg", "png"])
-
-    if claim_type == "Theft":
+    elif claim_type == "Theft":
         st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
-
-    if claim_type == "Riot":
+    elif claim_type == "Riot":
         st.file_uploader("Upload Riot Damage Image", type=["jpg", "jpeg", "png"])
         st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
-
-    if claim_type == "Accident":
+    elif claim_type == "Accident":
         st.file_uploader("Upload Accident Image", type=["jpg", "jpeg", "png"])
         st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
-
-    if claim_type == "Vehicle in Transit Accident":
+    elif claim_type == "Vehicle in Transit Accident":
         st.file_uploader("Upload Transit Damage Image", type=["jpg", "jpeg", "png"])
         st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
 
@@ -162,7 +213,8 @@ else:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         narrative = st.text_area("Incident Narrative", height=150)
         if st.button("Analyze Fraud Risk", use_container_width=True):
-            st.session_state.analysis_result = check_fraud_risk(
+            # Using your imported check_fraud_with_gemini
+            st.session_state.analysis_result = check_fraud_with_gemini(
                 narrative=narrative,
                 claim_amount=claim_amount,
                 idv=idv_value,
