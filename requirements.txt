@@ -1,5 +1,8 @@
-pip install plotly
-pip install pandas
-pip install numpy
-pip install streamlit
-pip install google-generativeai
+# Runtime dependencies for capstone-insurance
+# Minimal compatible versions
+streamlit>=1.25.0,<2.0
+plotly>=5.13.0
+pandas>=1.5.3
+requests>=2.31.0
+google-generative-ai>=0.2.0
+numpy>=1.24.0
