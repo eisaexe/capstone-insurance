@@ -9,15 +9,12 @@ st.set_page_config(page_title="Team 2 AI", layout="wide", page_icon="🐦‍🔥
 
 # --- STYLING ---
 # --- STYLING ---
-# --- STYLING ---
 st.markdown("""
 <style>
 .stApp {
     background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
     color: white;
 }
-
-/* Glass cards */
 .glass-card {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
@@ -26,54 +23,38 @@ st.markdown("""
     padding: 20px;
     margin-bottom: 20px;
 }
-
-h1, h2, h3, p, label { 
-    color: white !important; 
-}
-
-/* Inputs */
-.stTextInput input, 
-.stTextArea textarea {
+h1, h2, h3, p, label { color: white !important; }
+.stTextInput input, .stTextArea textarea {
     color: white !important;
     background-color: rgba(255,255,255,0.1) !important;
 }
+.metric-val { font-size: 2rem; font-weight: bold; }
+.metric-lbl { font-size: 0.9rem; color: #ccc; }
 
-/* Metrics */
-.metric-val { 
-    font-size: 2rem; 
-    font-weight: bold; 
-}
-.metric-lbl { 
-    font-size: 0.9rem; 
-    color: #ccc; 
-}
-
-/* ============================= */
-/*  Pill Style Radio Buttons     */
-/* ============================= */
+/* ===== Custom Radio Buttons (Pill Style) ===== */
 
 /* Hide default radio circle */
 div[role="radiogroup"] > label > div:first-child {
     display: none;
 }
 
-/* Radio group layout */
+/* Layout radios horizontally */
 div[role="radiogroup"] {
     display: flex;
-    gap: 18px;
-    justify-content: flex-start;
-    margin-bottom: 12px;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
 /* Radio pill */
 div[role="radiogroup"] label {
     background: rgba(255,255,255,0.08);
-    padding: 12px 32px;
+    padding: 12px 30px;
     border-radius: 999px;
     cursor: pointer;
     font-weight: 600;
     color: #ddd;
-    border: 1px solid rgba(255,255,255,0.15);
+    border: 2px solid transparent;
     transition: all 0.25s ease;
 }
 
@@ -87,11 +68,9 @@ div[role="radiogroup"] label:has(input:checked) {
     background: linear-gradient(135deg, #00d2ff, #3a7bd5);
     color: #000;
     border-color: #00d2ff;
-    box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
 }
 </style>
 """, unsafe_allow_html=True)
-
 
 
 # --- SESSION STATE INITIALIZATION ---
@@ -258,20 +237,81 @@ else:
     )
 
     # ... (Keep existing file uploader logic for claim types) ...
-    if claim_type == "Accidental Fire":
-        st.file_uploader("Upload Fire Damage Image", type=["jpg", "jpeg", "png"])
-    elif claim_type == "Theft":
-        st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
-    elif claim_type == "Riot":
-        st.file_uploader("Upload Riot Damage Image", type=["jpg", "jpeg", "png"])
-        st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
-    elif claim_type == "Accident":
-        st.file_uploader("Upload Accident Image", type=["jpg", "jpeg", "png"])
-        st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
-    elif claim_type == "Vehicle in Transit Accident":
-        st.file_uploader("Upload Transit Damage Image", type=["jpg", "jpeg", "png"])
-        st.file_uploader("Upload FIR Image", type=["jpg", "jpeg", "png", "pdf"])
+    # ---- ADD THIS ONCE (above the if/elif) ----
+fir_file = None
+fir_text = ""
 
+# ---- YOUR EXISTING LOGIC ----
+if claim_type == "Accidental Fire":
+    st.file_uploader("Upload Fire Damage Image", type=["jpg", "jpeg", "png"])
+
+elif claim_type == "Theft":
+    fir_file = st.file_uploader("Upload FIR as .txt file (optional)", type=["txt"])
+    fir_text = st.text_area(
+        "Enter FIR Details",
+        placeholder="Paste FIR content here (theft date, FIR number, police station, vehicle details...)",
+        height=140
+    )
+    if fir_file:
+        fir_text = fir_file.read().decode("utf-8")
+        st.info("📄 FIR text loaded from file. You can edit it.")
+
+elif claim_type == "Riot":
+    st.file_uploader("Upload Riot Damage Image", type=["jpg", "jpeg", "png"])
+    fir_file = st.file_uploader("Upload FIR as .txt file (optional)", type=["txt"])
+    fir_text = st.text_area(
+        "Enter FIR Details",
+        placeholder="Paste FIR content here (date, location, riot details, FIR number...)",
+        height=140
+    )
+    if fir_file:
+        fir_text = fir_file.read().decode("utf-8")
+        st.info("📄 FIR text loaded from file. You can edit it.")
+
+elif claim_type == "Accident":
+    st.file_uploader(
+        "Upload Accident Image",
+        type=["jpg", "jpeg", "png"]
+    )
+    fir_file = st.file_uploader(
+        "Upload FIR as .txt file (optional)",
+        type=["txt"]
+    )
+    fir_text = st.text_area(
+        "Enter FIR Details",
+        placeholder="Paste FIR content here (date, time, accident location, FIR number, police station...)",
+        height=140
+    )
+
+    if fir_file is not None:
+        try:
+            fir_text = fir_file.read().decode("utf-8")
+            st.info("📄 FIR text loaded from file. You can edit it.")
+        except Exception:
+            st.error("Unable to read FIR text file")
+
+elif claim_type == "Vehicle in Transit Accident":
+    st.file_uploader(
+        "Upload Transit Damage Image",
+        type=["jpg", "jpeg", "png"]
+    )
+    fir_file = st.file_uploader(
+        "Upload FIR as .txt file (optional)",
+        type=["txt"]
+    )
+    fir_text = st.text_area(
+        "Enter FIR Details",
+        placeholder="Paste FIR content here (transit details, date, FIR number, police station, incident summary...)",
+        height=140
+    )
+
+    if fir_file is not None:
+        try:
+            fir_text = fir_file.read().decode("utf-8")
+            st.info("📄 FIR text loaded from file. You can edit it.")
+        except Exception:
+            st.error("Unable to read FIR text file")
+  
     st.markdown('</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([1, 2])
