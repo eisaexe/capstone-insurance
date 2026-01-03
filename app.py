@@ -5,8 +5,10 @@ from agents.fraud_agent import check_fraud_with_gemini
 from agents.customer_agent import get_customer_response
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Team 2 AI", layout="wide", page_icon="🛡️")
+st.set_page_config(page_title="Team 2 AI", layout="wide", page_icon="🐦‍🔥")
 
+# --- STYLING ---
+# --- STYLING ---
 # --- STYLING ---
 st.markdown("""
 <style>
@@ -14,6 +16,8 @@ st.markdown("""
     background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
     color: white;
 }
+
+/* Glass cards */
 .glass-card {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
@@ -22,15 +26,73 @@ st.markdown("""
     padding: 20px;
     margin-bottom: 20px;
 }
-h1, h2, h3, p, label { color: white !important; }
-.stTextInput input, .stTextArea textarea {
+
+h1, h2, h3, p, label { 
+    color: white !important; 
+}
+
+/* Inputs */
+.stTextInput input, 
+.stTextArea textarea {
     color: white !important;
     background-color: rgba(255,255,255,0.1) !important;
 }
-.metric-val { font-size: 2rem; font-weight: bold; }
-.metric-lbl { font-size: 0.9rem; color: #ccc; }
+
+/* Metrics */
+.metric-val { 
+    font-size: 2rem; 
+    font-weight: bold; 
+}
+.metric-lbl { 
+    font-size: 0.9rem; 
+    color: #ccc; 
+}
+
+/* ============================= */
+/*  Pill Style Radio Buttons     */
+/* ============================= */
+
+/* Hide default radio circle */
+div[role="radiogroup"] > label > div:first-child {
+    display: none;
+}
+
+/* Radio group layout */
+div[role="radiogroup"] {
+    display: flex;
+    gap: 18px;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+}
+
+/* Radio pill */
+div[role="radiogroup"] label {
+    background: rgba(255,255,255,0.08);
+    padding: 12px 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #ddd;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: all 0.25s ease;
+}
+
+/* Hover effect */
+div[role="radiogroup"] label:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+/* Selected pill */
+div[role="radiogroup"] label:has(input:checked) {
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    color: #000;
+    border-color: #00d2ff;
+    box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
+}
 </style>
 """, unsafe_allow_html=True)
+
+
 
 # --- SESSION STATE INITIALIZATION ---
 if "authenticated" not in st.session_state:
@@ -68,7 +130,12 @@ if not st.session_state.authenticated:
     
     with col2:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        login_type = st.radio("Select Login Type", ["Officer", "Customer"])
+        login_type = st.radio(
+    "Select Login Type",
+    ["Officer", "Customer"],
+    horizontal=True
+)
+
         
         if login_type == "Officer":
             user_id = st.text_input("Employee ID")
